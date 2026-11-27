@@ -1,0 +1,14 @@
+{
+  "name": "nhs-pension-document-requests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-only NHS Pension Scheme document request emails. Personal details stay on the device.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "test": "node --test"
+  }
+}
