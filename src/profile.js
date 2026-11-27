@@ -141,3 +141,18 @@ export function saveQueue(storage, ids) {
   else storage.removeItem(QUEUE_KEY);
   return clean;
 }
+
+export const LEGACY_KEYS = [PROFILE_KEY, NATION_KEY, OPENED_KEY, QUEUE_KEY];
+
+export function purgeStoredPersonalData(...stores) {
+  for (const storage of stores) {
+    if (!storage) continue;
+    for (const key of LEGACY_KEYS) {
+      try {
+        storage.removeItem(key);
+      } catch {
+        /* ignore unavailable storage */
+      }
+    }
+  }
+}

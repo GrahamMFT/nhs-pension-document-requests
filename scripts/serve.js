@@ -14,6 +14,15 @@ const types = {
   ".ico": "image/x-icon",
   ".webmanifest": "application/manifest+json",
   ".txt": "text/plain; charset=utf-8",
+  ".woff2": "font/woff2",
+};
+
+const securityHeaders = {
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "Permissions-Policy": "interest-cohort=()",
+  "Content-Security-Policy": "default-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; script-src 'self'; connect-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+  "Cache-Control": "no-store",
 };
 
 const server = http.createServer((request, response) => {
@@ -34,7 +43,7 @@ const server = http.createServer((request, response) => {
       return;
     }
     const type = types[path.extname(file).toLowerCase()] || "application/octet-stream";
-    response.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
+    response.writeHead(200, { "Content-Type": type, ...securityHeaders });
     response.end(data);
   });
 });
