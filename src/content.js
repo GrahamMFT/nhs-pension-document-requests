@@ -94,6 +94,51 @@ export const services = {
     memberNote: "MediFintech does not provide financial advice. Confirm the current fee and claim-back position on the service page before you engage us.",
     approvalNote: "",
   },
+  basic: {
+    id: "basic",
+    enabled: true,
+    verified: true,
+    showPrice: true,
+    name: "NHS Pension Support (Basic)",
+    price: "£300 plus VAT",
+    href: servicesPage,
+    eyebrow: "NHS Pension Support",
+    headline: "A shorter report for Agenda for Change and GP practice staff.",
+    body: "NHS Pension Support (Basic) is the published shorter report for Agenda for Change staff up to Band 8c and for GP practice staff. It gives an overview of the pension position without the pension taxation detail included in the standard report.",
+    cta: "Read about our services",
+    memberNote: "This is technical NHS pension analysis, not financial advice.",
+    approvalNote: "",
+  },
+  award: {
+    id: "award",
+    enabled: true,
+    verified: true,
+    showPrice: true,
+    name: "NHS Pension Award Check",
+    price: "£415 plus VAT",
+    href: servicesPage,
+    eyebrow: "Already retired",
+    headline: "An independent check of a pension that is already in payment.",
+    body: "The NHS Pension Award Check is for members who have retired and started drawing their NHS pension. MediFintech checks the award against the record so you can see whether the pension in payment matches what the scheme should be paying.",
+    cta: "Read about our services",
+    memberNote: "Published fee on the services page. This is not financial advice.",
+    approvalNote: "",
+  },
+  "buy-back": {
+    id: "buy-back",
+    enabled: true,
+    verified: true,
+    showPrice: true,
+    name: "Contingent Decision Support (Buy back)",
+    price: "£1,250 plus VAT",
+    href: servicesPage,
+    eyebrow: "McCloud buy back",
+    headline: "The reinstatement quote is only part of the decision.",
+    body: "If you can buy back service or reinstate Added Years or Added Pension because of McCloud, the official quote does not show the annual allowance or the effect on the pension you already have. Contingent Decision Support compares the options. The published page says fees may be recoverable under the cost claim-back scheme.",
+    cta: "Read about our services",
+    memberNote: "Once the analysis is complete, MediFintech recommends financial advice on the wider plan. That advice is separate and is arranged through Quilter.",
+    approvalNote: "",
+  },
 };
 
 export const recordCheck = {
@@ -113,12 +158,12 @@ export const recordCheck = {
 export const advice = {
   id: "advice",
   enabled: true,
-  verified: false,
+  verified: true,
   showPrice: false,
-  href: contactPage,
-  eyebrow: "Wider financial planning",
+  href: "https://www.quilter.com/financial-advice/advice-services/companies-we-work-with/medifintech/i-want-to-speak-to-a-financial-adviser/",
+  eyebrow: "Quilter financial advice",
   headline: "Your NHS pension is only part of the picture.",
-  body: "MediFintech helps you understand your NHS pension. A financial adviser can help you understand how it fits into your wider financial plans.",
+  body: "MediFintech provides specialist NHS pension analysis. A financial adviser can help you see how that pension fits the rest of your plans. This next step is on Quilter’s website, where you can ask to speak to a financial adviser.",
   areas: [
     "Planning for retirement.",
     "Understanding your retirement income options.",
@@ -126,9 +171,9 @@ export const advice = {
     "Establishing whether you can afford to retire.",
     "Planning for your family’s financial future.",
   ],
-  cta: "Request an introduction to a financial adviser",
-  memberNote: "MediFintech does not provide financial advice. This opens our contact page so you can ask for an introduction to a regulated adviser. Your pension details are not attached to the link.",
-  approvalNote: "The public site says MediFintech can introduce members to regulated advisers and that MediFintech is part of Quilter plc. It does not publish a Quilter advice-referral URL. Replace href only after Quilter approval. Do not invent a referral arrangement.",
+  cta: "Speak to a financial adviser",
+  memberNote: "You are leaving this hub for Quilter’s website. Quilter provides access to regulated financial advice. MediFintech does not. Nothing you have typed here is sent with the link.",
+  approvalNote: "Destination supplied for Phase 3. The page returned HTTP 200 on 27 November 2026. Do not add claims about Quilter’s advice process beyond this wording.",
 };
 
 export const guides = {
@@ -326,6 +371,197 @@ export function safeExternalHref(href) {
     return "";
   }
 }
+
+export const hubSections = [
+  {
+    id: "find",
+    title: "Find my documents",
+    summary: "Access existing documents directly from NHS Pensions, ESR and HMRC.",
+    href: "#/find",
+    icon: "find",
+  },
+  {
+    id: "request",
+    title: "Request my documents",
+    summary: "Generate personalised document request emails for missing records.",
+    href: "#/request",
+    icon: "request",
+  },
+  {
+    id: "understand",
+    title: "Understand my documents",
+    summary: "View annotated examples and explanations from our specialists.",
+    href: "#/understand",
+    icon: "understand",
+  },
+  {
+    id: "records",
+    title: "Check my pension records",
+    summary: "Get specialist support checking the accuracy of your pension records.",
+    href: "#/records",
+    icon: "shield",
+  },
+  {
+    id: "services",
+    title: "Understand my pension benefits",
+    summary: "Explore MediFintech's pension modelling and tax services.",
+    href: "#/services",
+    icon: "chart",
+  },
+  {
+    id: "advice",
+    title: "Plan my financial future",
+    summary: "Request an introduction to a financial adviser.",
+    href: "#/advice",
+    icon: "people",
+  },
+];
+
+export const officialResources = [
+  {
+    group: "NHS Pension Scheme",
+    title: "Total Reward Statement and annual benefit statement",
+    body: "NHSBSA explains which statement you should get, and how to open it in ESR or My NHS Pension. The previous Total Reward Statement address now redirects here. Save a copy before the next annual refresh.",
+    href: "https://www.nhsbsa.nhs.uk/employee-section",
+  },
+  {
+    group: "NHS Pension Scheme",
+    title: "Which statement you receive",
+    body: "A Total Reward Statement includes the annual benefit statement and some employment information. An annual benefit statement is the pension statement used where ESR does not provide a Total Reward Statement.",
+    href: "https://www.nhsbsa.nhs.uk/employee-section/what-type-statement-youll-get",
+  },
+  {
+    group: "NHS Pension Scheme",
+    title: "ESR payslips, P60s and statements",
+    body: "If your employer uses ESR, Employee Self Service can show payslips, P60s and, where it is available, your Total Reward Statement.",
+    href: "https://my.esr.nhs.uk/dashboard/web/esrweb",
+  },
+  {
+    group: "NHS Pension Scheme",
+    title: "Scotland: SPPA Engage",
+    body: "Members of the NHS Pension Scheme in Scotland can use the SPPA pension portal for scheme documents.",
+    href: "https://pensions.gov.scot/engage-pension-portal",
+  },
+  {
+    group: "NHS Pension Scheme",
+    title: "Northern Ireland: HSC Pensions",
+    body: "Members of the HSC Pension Scheme can use the HSC Pensions site, including the Engage portal, for scheme documents.",
+    href: "https://hscpensions.hscni.net/hsc-pension-scheme/engage/",
+  },
+  {
+    group: "HMRC",
+    title: "Annual Tax Summary",
+    body: "HMRC’s Annual Tax Summary shows the taxable income HMRC knew about when it was prepared, and the rates used for Income Tax and National Insurance. Not everyone has one, and it is not evidence of income.",
+    href: "https://www.gov.uk/guidance/annual-tax-summary",
+  },
+  {
+    group: "HMRC",
+    title: "Personal tax account",
+    body: "Your personal tax account can show Income Tax, your tax code, and income from work for recent years. Sign-in details stay with HMRC.",
+    href: "https://www.gov.uk/personal-tax-account",
+  },
+  {
+    group: "State Pension",
+    title: "State Pension forecast",
+    body: "This GOV.UK service shows how much State Pension you could get, when you can get it, and whether you could increase it. It is separate from your NHS pension.",
+    href: "https://www.gov.uk/check-state-pension",
+  },
+  {
+    group: "NHS Pension Scheme",
+    title: "NHS Pensions",
+    body: "NHSBSA’s NHS Pensions pages are the scheme’s own explanation of the NHS Pension Scheme in England and Wales.",
+    href: "https://www.nhsbsa.nhs.uk/nhs-pensions",
+  },
+];
+
+export const serviceDirectory = ["pension-report", "basic", "annual-allowance", "scheme-pays", "rpss", "buy-back", "award"];
+
+export const examples = {
+  NHSP01: {
+    note: "Synthetic example. This is not a real Total Reward Statement, and the words in the boxes are not a member’s details.",
+    lines: [
+      ["Member", "Example name"],
+      ["Statement year", "The year the statement covers"],
+      ["1995 section", "Pension and lump sum at that section’s pension age"],
+      ["2008 section", "Pension at that section’s pension age"],
+      ["2015 scheme", "Pension at that scheme’s pension age"],
+    ],
+    annotations: [
+      "Each section is shown at its own pension age. The lines are not all payable on the same date.",
+      "The statement does not, by itself, show whether the service and pay underneath it are right.",
+    ],
+  },
+  NHSP02: {
+    note: "Synthetic example. This is not a real estimate and it does not show a pension amount.",
+    lines: [
+      ["Member", "Example name"],
+      ["Estimate date", "The date you asked the scheme to calculate to"],
+      ["Benefits", "A fresh calculation, similar in purpose to a statement"],
+    ],
+    annotations: [
+      "Ask for this only when a Total Reward Statement or annual benefit statement is missing.",
+      "The date matters. A different date is a different calculation.",
+    ],
+  },
+  NHSP03: {
+    note: "Synthetic example. This is not a real pension savings statement and it does not show a growth figure.",
+    lines: [
+      ["Tax year", "One of the years you selected"],
+      ["Pension input", "The growth the annual allowance rules look at"],
+      ["Allowance", "The standard allowance, or a lower allowance if it applies to you"],
+    ],
+    annotations: [
+      "This is not the pension you are paid. It is a measure of growth over a tax year.",
+      "A statement for one year does not show scheme pays loans. Those are a separate extract.",
+    ],
+  },
+  NHSP04: {
+    note: "Synthetic example. This is not a real remediable pension savings statement.",
+    lines: [
+      ["Remedy period", "The McCloud years the statement covers, plus 2022/23"],
+      ["Revised position", "The annual allowance position after rollback"],
+      ["Comparison", "Later versions may not show the original and revised amounts side by side"],
+    ],
+    annotations: [
+      "Only members in scope of the McCloud remedy receive an RPSS.",
+      "Reading the statement does not complete the report to HMRC.",
+    ],
+  },
+  NHSP05: {
+    note: "Synthetic example. This is not a real service and pay extract.",
+    lines: [
+      ["Year of service", "A row for a period of membership"],
+      ["Pay", "The pensionable pay the scheme holds for that period"],
+      ["Added years or ERRBO", "Contracts recorded on the extract, where you have them"],
+    ],
+    annotations: [
+      "Current extracts do not include pension growth or scheme pays loans.",
+      "Payslips show what the employer paid. This extract shows what the scheme used.",
+    ],
+  },
+  NHSP06: {
+    note: "Synthetic example. This is not a real scheme pays extract and it does not show a loan balance.",
+    lines: [
+      ["Tax year", "A year in which a scheme pays loan was accepted"],
+      ["Loan", "The amount the scheme currently holds, which can differ from the original letter"],
+      ["Effect", "The loan, with interest, reduces benefits when they are paid"],
+    ],
+    annotations: [
+      "Use this for the current record. An election letter can be out of date.",
+    ],
+  },
+  "hmrc-mccloud": {
+    note: "Synthetic example. This is not a real HMRC extract and it does not show income or tax figures.",
+    lines: [
+      ["Tax year", "Each year from 2015/16 to 2022/23"],
+      ["Self Assessment", "The fields HMRC holds for that year, or a blank year if you did not file"],
+      ["Reply", "Sent only after the proforma and the email protocol are accepted"],
+    ],
+    annotations: [
+      "A blank year means HMRC did not have a Self Assessment return to extract. It is not a zero tax charge by itself.",
+    ],
+  },
+};
 
 export function collectStrings(value, found = []) {
   if (typeof value === "string") found.push(value);

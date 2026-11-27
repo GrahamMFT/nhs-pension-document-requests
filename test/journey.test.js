@@ -7,8 +7,11 @@ import { ANALYTICS_SCHEMA, PERSONAL_PROPERTIES, record, sanitize } from "../src/
 import {
   advice,
   brand,
+  examples,
   guides,
+  hubSections,
   objectives,
+  officialResources,
   publicOffer,
   recordCheck,
   safeExternalHref,
@@ -93,7 +96,9 @@ test("completion offers follow the goal and stay on published services where ver
   const check = publicOffer("record-check");
   assert.equal(check.price, "");
   assert.equal(Object.hasOwn(check, "approvalNote"), false);
-  assert.equal(publicOffer("advice").href, "https://www.medifintech.co.uk/contact/");
+  assert.equal(publicOffer("advice").href, "https://www.quilter.com/financial-advice/advice-services/companies-we-work-with/medifintech/i-want-to-speak-to-a-financial-adviser/");
+  assert.equal(publicOffer("advice").cta, "Speak to a financial adviser");
+  assert.equal(advice.href.includes("medifintech.co.uk/contact"), false);
 });
 
 test("offers cannot smuggle personal details into a link", () => {
@@ -157,7 +162,34 @@ test("the interface uses the logo palette rather than the website theme", () => 
   assert.match(css, /#548732/i);
   assert.equal(/#023843|#baa94a|#0f7b3f/i.test(css), false);
   const html = readFileSync(path.join(root, "index.html"), "utf8");
-  assert.match(html, /Your NHS pension\. Made simpler\./);
+  const app = readFileSync(path.join(root, "app.js"), "utf8");
+  assert.match(html, /Your NHS Pension Document Hub/);
+  assert.match(app, /Your NHS Pension Document Hub/);
+  assert.match(app, /Find, request and understand your NHS pension documents\./);
   assert.match(html, /medifintech-logo\.png/);
   for (const item of brand.nav) assert.match(html, new RegExp(item.href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("the hub uses the six sections and only verified official links", () => {
+  assert.deepEqual(hubSections.map((item) => item.title), [
+    "Find my documents",
+    "Request my documents",
+    "Understand my documents",
+    "Check my pension records",
+    "Understand my pension benefits",
+    "Plan my financial future",
+  ]);
+  assert.equal(hubSections[0].summary, "Access existing documents directly from NHS Pensions, ESR and HMRC.");
+  assert.equal(hubSections[5].summary, "Request an introduction to a financial adviser.");
+  assert.ok(officialResources.length >= 6);
+  for (const resource of officialResources) {
+    assert.match(safeExternalHref(resource.href), /^https:\/\//, resource.title);
+    assert.equal(/name=|nino=|email=/i.test(resource.href), false);
+  }
+  for (const template of templates) {
+    const example = examples[template.id];
+    assert.match(example.note, /Synthetic example/);
+    const text = JSON.stringify(example);
+    assert.equal(/£\s?\d/.test(text), false, template.id);
+  }
 });

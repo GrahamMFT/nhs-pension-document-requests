@@ -2,14 +2,17 @@ import { record } from "./src/analytics.js";
 import { composeEmail, fullTemplateText, oneLine, profileWarnings } from "./src/compose.js";
 import {
   advice,
-  brand,
   catalogueGroups,
+  examples,
   guides,
+  hubSections,
   objectiveById,
   objectives,
+  officialResources,
   publicOffer,
   recordCheck,
   safeExternalHref,
+  serviceDirectory,
 } from "./src/content.js";
 import { defaultEstimateDate } from "./src/dates.js";
 import { icon } from "./src/icons.js";
@@ -73,36 +76,54 @@ function emailFor(template) {
   });
 }
 
+function decodePart(part) {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    return part;
+  }
+}
+
 function parseRoute() {
-  const raw = location.hash.replace(/^#\/?/, "");
-  const [head, tail] = raw.split("/").map((part) => {
-    try {
-      return decodeURIComponent(part);
-    } catch {
-      return part;
-    }
-  });
-  if (!head) return { name: "home" };
-  if (head === "choose") return { name: "choose", objective: tail || "" };
-  if (head === "details") return { name: "details" };
-  if (head === "prepare") return { name: "prepare", focus: tail || "" };
-  if (head === "done") return { name: "done" };
-  if (getTemplate(head)) return { name: "template", id: head };
-  return { name: "home" };
+  const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodePart);
+  const [a, b, c] = parts;
+  if (!a) return { name: "hub" };
+  if (a === "find") return { name: "find" };
+  if (a === "understand") return b && getTemplate(b) ? { name: "explain", id: b } : { name: "understand" };
+  if (a === "records") return { name: "records" };
+  if (a === "services") return { name: "services" };
+  if (a === "advice") return { name: "advice" };
+  if (a === "request") {
+    if (!b) return { name: "request" };
+    if (b === "choose") return { name: "choose", objective: c || "" };
+    if (b === "details") return { name: "details" };
+    if (b === "prepare") return { name: "prepare", focus: c || "" };
+    if (b === "done") return { name: "done" };
+  }
+  if (a === "choose") return { name: "legacy", to: `#/request/choose/${b || ""}` };
+  if (a === "details") return { name: "legacy", to: "#/request/details" };
+  if (a === "prepare") return { name: "legacy", to: b ? `#/request/prepare/${b}` : "#/request/prepare" };
+  if (a === "done") return { name: "legacy", to: "#/request/done" };
+  if (getTemplate(a)) return { name: "template", id: a };
+  return { name: "hub" };
 }
 
 function resolve() {
   const route = parseRoute();
+  if (route.name === "legacy") {
+    location.replace(route.to);
+    return null;
+  }
   if (route.name === "template") {
     if (!state.selected.includes(route.id)) state.selected.push(route.id);
     if (!state.objective) state.objective = "catalogue";
-    location.replace(`#/prepare/${route.id}`);
+    location.replace(`#/request/prepare/${route.id}`);
     return null;
   }
   if (route.name === "choose") {
     const objective = objectiveById(route.objective);
     if (!objective) {
-      location.replace("#/");
+      location.replace("#/request");
       return null;
     }
     if (state.objective !== objective.id) {
@@ -114,18 +135,22 @@ function resolve() {
     return route;
   }
   if (["details", "prepare", "done"].includes(route.name) && !state.selected.length) {
-    location.replace(state.objective ? `#/choose/${state.objective}` : "#/");
+    location.replace(state.objective ? `#/request/choose/${state.objective}` : "#/request");
+    return null;
+  }
+  if (route.name === "explain" && !getTemplate(route.id)) {
+    location.replace("#/understand");
     return null;
   }
   return route;
 }
 
 function stepper(current) {
-  const choose = state.objective ? `#/choose/${state.objective}` : "#/";
+  const choose = state.objective ? `#/request/choose/${state.objective}` : "#/request";
   const steps = [
     ["choose", "Choose your documents", choose],
-    ["details", "Enter your details", "#/details"],
-    ["prepare", "Prepare your requests", "#/prepare"],
+    ["details", "Enter your details", "#/request/details"],
+    ["prepare", "Prepare your requests", "#/request/prepare"],
   ];
   const items = steps.map(([id, label, href], index) => {
     const currentAttr = id === current ? ' aria-current="step"' : "";
@@ -226,29 +251,209 @@ function schemeControl(name) {
   return `<fieldset class="scheme"><legend>Pension scheme for the savings statement</legend><div class="seg-row">${buttons}</div><p class="hint">England and Wales writes to NHS Pensions. Scotland writes to SPPA. Northern Ireland writes to HSC Pension Service. Your other requests still go to NHS Pensions.</p></fieldset>`;
 }
 
+function crumbs(items) {
+  const html = items.map((item, index) => {
+    if (index === items.length - 1) return `<li><span aria-current="page">${escapeHtml(item.label)}</span></li>`;
+    return `<li><a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a></li>`;
+  }).join("");
+  return `<nav class="crumbs" aria-label="Breadcrumb"><ol>${html}</ol></nav>`;
+}
+
+const hubCrumb = { href: "#/", label: "Document Hub" };
+
+function hubRow({ href, iconName, title, summary, external = false }) {
+  const safe = external ? safeExternalHref(href) : href;
+  if (!safe) return "";
+  const extra = external ? ` target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"` : "";
+  const hidden = external ? `<span class="visually-hidden"> Opens in a new tab.</span>` : "";
+  return `<a class="hub-row" href="${escapeHtml(safe)}"${extra}>
+    <span class="hub-icon">${icon(iconName)}</span>
+    <span class="hub-copy">
+      <span class="hub-title">${escapeHtml(title)}</span>
+      <span class="hub-desc">${escapeHtml(summary)}${hidden}</span>
+    </span>
+    <span class="hub-chevron" aria-hidden="true">${icon("chevron")}</span>
+  </a>`;
+}
+
 function homePage() {
-  const cards = objectives.map((objective) => `<a class="goal" href="#/choose/${objective.id}">
-      <span class="goal-icon">${icon(objective.icon)}</span>
-      <span class="goal-title">${escapeHtml(objective.title)}</span>
-      <span class="goal-text">${escapeHtml(objective.summary)}</span>
-    </a>`).join("");
+  const rows = hubSections.map((item) => hubRow({
+    href: item.href,
+    iconName: item.icon,
+    title: item.title,
+    summary: item.summary,
+  })).join("");
   return `<section class="hero">
-      <p class="eyebrow">Free document requests</p>
-      <h1>Your NHS pension. Made simpler.</h1>
-      <p class="lede">Request the documents you need from NHS Pensions and HMRC using our free document request tool.</p>
-      <ul class="promises">
-        <li>Completely free to use.</li>
-        <li>No registration required.</li>
-        <li>Personal details are not submitted to MediFintech.</li>
-        <li>Developed by NHS pension specialists.</li>
-      </ul>
-      <p class="privacy-line">What you type stays in this open page. It is not saved for your next visit, and it is not sent to MediFintech, Quilter or anyone else.</p>
+      <h1>Your NHS Pension Document Hub</h1>
+      <p>Find, request and understand your NHS pension documents.</p>
     </section>
-    <section class="panel" aria-labelledby="goal-title">
-      <h2 id="goal-title">What would you like to do?</h2>
-      <div class="goals">${cards}</div>
-    </section>
-    ${offerHtml(recordCheck.id, "landing", { variant: "primary" })}`;
+    <nav class="hub-list" aria-label="Document hub">${rows}</nav>`;
+}
+
+function findPage() {
+  const groups = [];
+  for (const resource of officialResources) {
+    const group = groups.find((item) => item.title === resource.group);
+    if (group) group.items.push(resource);
+    else groups.push({ title: resource.group, items: [resource] });
+  }
+  const sections = groups.map((group) => {
+    const rows = group.items.map((item) => hubRow({
+      href: item.href,
+      iconName: "find",
+      title: item.title,
+      summary: item.body,
+      external: true,
+    })).join("");
+    return `<section class="stack"><h2>${escapeHtml(group.title)}</h2><nav class="hub-list" aria-label="${escapeHtml(group.title)}">${rows}</nav></section>`;
+  }).join("");
+  return `${crumbs([hubCrumb, { label: "Find my documents" }])}
+    <header class="page-head">
+      <h1>Find my documents</h1>
+      <p class="lede">Access existing documents directly from NHS Pensions, ESR and HMRC.</p>
+    </header>
+    <div class="prose">
+      <p>Look here before you ask the scheme to send something. Total Reward Statements, annual benefit statements, ESR payslips, Annual Tax Summaries and a State Pension forecast are already available to many members.</p>
+      <p>Sign in on the organisation’s own site. This hub does not see those sign-in details, and it does not send anything you type here with the link.</p>
+    </div>
+    ${sections}
+    <p class="inline-actions"><a href="#/request">The document is not available online. Request it.</a></p>`;
+}
+
+function requestPage() {
+  const rows = objectives.map((objective) => hubRow({
+    href: `#/request/choose/${objective.id}`,
+    iconName: objective.icon,
+    title: objective.title,
+    summary: objective.summary,
+  })).join("");
+  const quick = templates.map((template) => {
+    const guide = guides[template.id];
+    return `<li><a href="#/${escapeHtml(template.id)}">${escapeHtml(template.code)} ${escapeHtml(guide?.plain || template.title)}</a></li>`;
+  }).join("");
+  return `${crumbs([hubCrumb, { label: "Request my documents" }])}
+    <header class="page-head">
+      <h1>Request my documents</h1>
+      <p class="lede">Generate personalised document request emails for missing records.</p>
+    </header>
+    <div class="prose">
+      <p>Use this when the document is not already available from NHS Pensions, ESR or HMRC. <a href="#/find">Find my documents</a> is the quicker route when a statement or payslip is already online.</p>
+      <p>The request stays in this page until you open it in your own email app. MediFintech does not receive it.</p>
+    </div>
+    <nav class="hub-list" aria-label="Reasons to request documents">${rows}</nav>
+    <section class="stack">
+      <h2>Open one template</h2>
+      <p>Experienced members and advisers can go straight to a single request.</p>
+      <ul class="quick-list">${quick}</ul>
+    </section>`;
+}
+
+function understandPage() {
+  const rows = templates.map((template) => {
+    const guide = guides[template.id];
+    return hubRow({
+      href: `#/understand/${template.id}`,
+      iconName: "understand",
+      title: guide?.plain || template.title,
+      summary: template.summary,
+    });
+  }).join("");
+  return `${crumbs([hubCrumb, { label: "Understand my documents" }])}
+    <header class="page-head">
+      <h1>Understand my documents</h1>
+      <p class="lede">View annotated examples and explanations from our specialists.</p>
+    </header>
+    <div class="prose">
+      <p>Each note explains what the document is, what it contains, how to read it and why it matters. The examples are synthetic. They are not a member’s statement, and they do not show pension figures.</p>
+    </div>
+    <nav class="hub-list" aria-label="Document explanations">${rows}</nav>`;
+}
+
+function exampleHtml(id) {
+  const example = examples[id];
+  if (!example) return "";
+  const rows = example.lines.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
+  const notes = example.annotations.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  return `<section class="example" aria-labelledby="example-title">
+    <p class="kicker">Synthetic example</p>
+    <h2 id="example-title">How to read it</h2>
+    <p>${escapeHtml(example.note)}</p>
+    <dl class="example-sheet">${rows}</dl>
+    <ul>${notes}</ul>
+  </section>`;
+}
+
+function explainPage(id) {
+  const template = getTemplate(id);
+  const guide = guides[id];
+  const rows = [
+    ["What is this document?", escapeHtml(guide.what)],
+    ["What information does it contain?", escapeHtml(guide.contains)],
+    ["How to interpret it", escapeHtml(guide.next)],
+    ["Why it matters", escapeHtml(guide.why)],
+    ["Where you may already have it", `${escapeHtml(guide.elsewhere)} ${linksHtml(template)}`],
+  ];
+  const body = rows.map(([title, html]) => `<h2>${escapeHtml(title)}</h2><p>${html}</p>`).join("");
+  const service = publicOffer(guide.serviceId);
+  return `${crumbs([hubCrumb, { href: "#/understand", label: "Understand my documents" }, { label: guide.plain }])}
+    <header class="page-head">
+      <p class="kicker">${escapeHtml(template.code)}</p>
+      <h1>${escapeHtml(guide.plain)}</h1>
+      <p class="lede">${escapeHtml(template.summary)}</p>
+    </header>
+    <div class="prose">${body}</div>
+    ${exampleHtml(id)}
+    ${service ? offerHtml(guide.serviceId, "explain", { template: id, variant: "quiet" }) : ""}
+    <div class="bar">
+      <button type="button" class="btn" data-action="request-one" data-template="${escapeHtml(id)}">Request this document</button>
+      <a class="btn secondary" href="#/find">Find it online first</a>
+    </div>`;
+}
+
+function recordsPage() {
+  return `${crumbs([hubCrumb, { label: "Check my pension records" }])}
+    <header class="page-head">
+      <h1>Check my pension records</h1>
+      <p class="lede">Get specialist support checking the accuracy of your pension records.</p>
+    </header>
+    <div class="prose">
+      <p>NHS pension benefits are calculated from the service and pay the scheme holds. A statement shows the result of that calculation. It does not, by itself, show whether a year of service or a period of pay is missing.</p>
+      <p>MediFintech’s free pension record check is a specialist look at that record. There is not yet a separate registration page for it. The button opens the MediFintech contact page so you can ask about the check. Nothing you type in this hub is sent with the link.</p>
+      <p>The paid review of a full pension position remains NHS Pension Support. That is a different service, with a published fee.</p>
+      <p><a href="#/understand/NHSP05">What a service and pay extract contains</a> · <a href="#/request/choose/records">Request the extract</a></p>
+    </div>
+    ${offerHtml(recordCheck.id, "records", { variant: "primary" })}`;
+}
+
+function servicesPage() {
+  const sections = serviceDirectory.map((id) => {
+    const offer = publicOffer(id);
+    if (!offer) return "";
+    return `<section class="service">${offerHtml(id, "services", { variant: "quiet" })}</section>`;
+  }).join("");
+  return `${crumbs([hubCrumb, { label: "Understand my pension benefits" }])}
+    <header class="page-head">
+      <h1>Understand my pension benefits</h1>
+      <p class="lede">Explore MediFintech's pension modelling and tax services.</p>
+    </header>
+    <div class="prose">
+      <p>These are technical NHS pension services. MediFintech explains the scheme, the tax position and the record. It does not provide financial advice. Each description and fee below is taken from the published MediFintech pages, and the button opens that page.</p>
+      <p>If you are deciding when to retire, or how the NHS pension fits savings and other pensions, that wider conversation is with a financial adviser through Quilter. <a href="#/advice">Plan my financial future</a>.</p>
+    </div>
+    ${sections}`;
+}
+
+function advicePage() {
+  return `${crumbs([hubCrumb, { label: "Plan my financial future" }])}
+    <header class="page-head">
+      <h1>Plan my financial future</h1>
+      <p class="lede">Request an introduction to a financial adviser.</p>
+    </header>
+    <div class="prose">
+      <p>An NHS pension is one part of retirement. The rest can include other pensions, savings, investments and what your household needs to live on. MediFintech provides specialist NHS pension analysis. Quilter provides access to regulated financial advice.</p>
+      <p>The button below opens Quilter’s website in a new tab. You are leaving this hub. Nothing you have typed here is sent with the link.</p>
+    </div>
+    ${offerHtml(advice.id, "advice-page", { variant: "primary" })}`;
 }
 
 function documentCard(id, meta) {
@@ -282,7 +487,8 @@ function choosePage(objectiveId) {
   const recommendedHtml = recommended.map((item) => documentCard(item.id, item)).join("");
   const extra = groups.map((group) => `<section class="doc-group"><h3>${escapeHtml(group.title)}</h3>${group.ids.map((id) => documentCard(id)).join("")}</section>`).join("");
   const count = state.selected.length;
-  return `${stepper("choose")}
+  return `${crumbs([hubCrumb, { href: "#/request", label: "Request my documents" }, { label: "Choose your documents" }])}
+    ${stepper("choose")}
     <header class="page-head">
       <h1>${escapeHtml(objective.title)}</h1>
       <p class="lede">${escapeHtml(objective.summary)}</p>
@@ -294,7 +500,7 @@ function choosePage(objectiveId) {
       <p id="choose-count">${count === 1 ? "1 document selected." : `${count} documents selected.`}</p>
       <button type="button" class="btn" data-action="confirm-documents" ${count ? "" : "disabled"}>Continue</button>
     </div>
-    <p class="inline-actions"><a href="#/">Choose a different goal</a> · ${restartControl()}</p>`;
+    <p class="inline-actions"><a href="#/request">Choose a different goal</a> · ${restartControl()}</p>`;
 }
 
 function detailsPage() {
@@ -306,7 +512,8 @@ function detailsPage() {
   const whyHmrc = needs.hmrc
     ? `<p class="limitation">HMRC will not release the McCloud extract without a National Insurance number or UTR, and they reply to the email address you give. Leave previous addresses blank if you have not moved.</p>`
     : "";
-  return `${stepper("details")}
+  return `${crumbs([hubCrumb, { href: "#/request", label: "Request my documents" }, { label: "Enter your details" }])}
+    ${stepper("details")}
     <header class="page-head">
       <h1>Enter your details</h1>
       <p class="lede">These details are used only to complete the ${state.selected.length === 1 ? "request" : "requests"} you chose. Fields you do not need are not shown.</p>
@@ -318,7 +525,7 @@ function detailsPage() {
       ${whyHmrc}
       ${extra ? `<div class="form-grid">${extra}</div>` : ""}
       <div class="bar">
-        <a class="btn secondary" href="#/choose/${escapeHtml(state.objective)}">Back to documents</a>
+        <a class="btn secondary" href="#/request/choose/${escapeHtml(state.objective)}">Back to documents</a>
         <button type="submit" class="btn">Continue</button>
       </div>
       <p class="privacy-line">Your details stay in this page while it is open. Refreshing or closing the page clears them. They are not saved in this browser and they are not submitted to MediFintech. An email, a downloaded file or text you copy can remain on your device or in your email service.</p>
@@ -396,17 +603,18 @@ function preparePage(focus) {
     const guide = guides[id];
     return `<li><a href="#card-${escapeHtml(id)}">${escapeHtml(guide?.plain || template.title)}</a> <span data-sent-label="${escapeHtml(id)}">Not marked as sent</span></li>`;
   }).join("");
-  return `${stepper("prepare")}
+  return `${crumbs([hubCrumb, { href: "#/request", label: "Request my documents" }, { label: "Prepare your requests" }])}
+    ${stepper("prepare")}
     <header class="page-head">
       <h1>Prepare your requests</h1>
       <p class="lede" id="sent-progress" aria-live="polite">${sent} of ${state.selected.length} marked as sent.</p>
       <p class="hint">Open each draft, check it, and send it yourself. Mark a request as sent only after you have pressed Send. MediFintech does not send these emails and does not receive a copy.</p>
     </header>
     <ol class="jump-list">${jumps}</ol>
-    <p class="inline-actions"><a href="#/details">Amend your details</a> · <a href="#/choose/${escapeHtml(state.objective)}">Change documents</a> · ${restartControl()}</p>
+    <p class="inline-actions"><a href="#/request/details">Amend your details</a> · <a href="#/request/choose/${escapeHtml(state.objective)}">Change documents</a> · ${restartControl()}</p>
     ${state.selected.map(requestCard).join("")}
     <div class="bar">
-      <a class="btn" href="#/done">Continue to what happens next</a>
+      <a class="btn" href="#/request/done">Continue to what happens next</a>
     </div>
     <span class="route-focus" data-focus="${escapeHtml(focus || "")}" hidden></span>`;
 }
@@ -416,7 +624,8 @@ function donePage() {
   const items = lines.map((line) => `<li><span class="kicker">${escapeHtml(line.code)}</span> <strong>${escapeHtml(line.title)}</strong><span class="hint">${escapeHtml(line.status)} · ${escapeHtml(line.to)}</span></li>`).join("");
   const outstanding = lines.filter((line) => line.status !== "Marked as sent");
   const offers = completionOfferIds(state.objective, state.selected).map((id, index) => offerHtml(id, "done", { variant: index === 0 ? "primary" : "quiet" })).join("");
-  return `${stepper("done")}
+  return `${crumbs([hubCrumb, { href: "#/request", label: "Request my documents" }, { label: "Your requests" }])}
+    ${stepper("done")}
     <header class="page-head">
       <h1>Your requests</h1>
       <p class="lede">${outstanding.length ? `${outstanding.length} still to mark as sent.` : "Every selected request is marked as sent."} Opening a draft is not the same as sending it.</p>
@@ -427,7 +636,7 @@ function donePage() {
       <div class="actions no-print">
         <button type="button" class="btn" data-action="print-checklist">Print checklist</button>
         <button type="button" class="btn secondary" data-action="download-checklist">Download checklist</button>
-        <a class="btn secondary" href="#/choose/${escapeHtml(state.objective)}">Request further documents</a>
+        <a class="btn secondary" href="#/request/choose/${escapeHtml(state.objective)}">Request further documents</a>
       </div>
     </section>
     <section class="panel" aria-labelledby="after-title">
@@ -436,11 +645,18 @@ function donePage() {
       <p>You may want help understanding the information, checking its accuracy, or deciding what it means. That help is separate from this free tool, and you do not have to ask for it in order to send your requests.</p>
     </section>
     ${offers}
-    <p class="inline-actions no-print"><a href="#/prepare">Back to your requests</a> · <a href="#/">Start from the goals</a> · ${restartControl()}</p>`;
+    <p class="inline-actions no-print"><a href="#/request/prepare">Back to your requests</a> · <a href="#/request">Start from the goals</a> · <a href="#/advice">Plan my financial future</a> · ${restartControl()}</p>`;
 }
 
 function markup(route) {
-  if (route.name === "home") return homePage();
+  if (route.name === "hub") return homePage();
+  if (route.name === "find") return findPage();
+  if (route.name === "request") return requestPage();
+  if (route.name === "understand") return understandPage();
+  if (route.name === "explain") return explainPage(route.id);
+  if (route.name === "records") return recordsPage();
+  if (route.name === "services") return servicesPage();
+  if (route.name === "advice") return advicePage();
   if (route.name === "choose") return choosePage(route.objective);
   if (route.name === "details") return detailsPage();
   if (route.name === "prepare") return preparePage(route.focus);
@@ -592,7 +808,7 @@ function continueDetails() {
   }
   state.attempted = false;
   record("details_continued", { objective: state.objective || "", templates: state.selected });
-  location.hash = "#/prepare";
+  location.hash = "#/request/prepare";
 }
 
 function resetAll() {
@@ -615,7 +831,7 @@ function revealMissing(template, email) {
     document.querySelector(`[data-card="${template.id}"] [data-years] input, [data-card="${template.id}"] [data-estimate]`)?.focus();
     return;
   }
-  location.hash = "#/details";
+  location.hash = "#/request/details";
 }
 
 async function copyText(text, button, label) {
@@ -710,10 +926,18 @@ function onClick(event) {
     resetAll();
     return;
   }
+  if (action === "request-one" && template) {
+    state.objective = "catalogue";
+    state.selected = [template.id];
+    state.attempted = false;
+    record("documents_confirmed", { objective: "catalogue", templates: [template.id] });
+    location.hash = "#/request/details";
+    return;
+  }
   if (action === "confirm-documents") {
     if (!state.selected.length) return;
     record("documents_confirmed", { objective: state.objective || "", templates: [...state.selected] });
-    location.hash = "#/details";
+    location.hash = "#/request/details";
     return;
   }
   if (action === "open-mail" && template) {
@@ -824,6 +1048,6 @@ render();
 
 document.querySelector(".site-nav")?.addEventListener("click", (event) => {
   const link = event.target.closest("a");
-  if (!link) return;
+  if (!link || link.getAttribute("href")?.startsWith("#")) return;
   record("referral_clicked", { referral: "site-nav", placement: "header" });
 });

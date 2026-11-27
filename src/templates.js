@@ -73,7 +73,7 @@ export const templates = [
       "You can only be sent a Total Reward Statement for a year you, or NHS Pensions, have already opened. If nobody has viewed that year, it will not be available.",
     ],
     links: [
-      { label: "England & Wales TRS", href: "https://www.totalrewardstatements.nhs.uk/MyStatement" },
+      { label: "England & Wales statements", href: "https://www.nhsbsa.nhs.uk/employee-section" },
       { label: "Scotland — SPPA Engage", href: "https://pensions.gov.scot/engage-pension-portal" },
       { label: "Northern Ireland — HSC Engage", href: "https://hscpensions.hscni.net/hsc-pension-scheme/engage/" },
     ],
@@ -112,7 +112,7 @@ Kind regards
       "The NHS Pension Scheme has to provide a benefit statement every year. If you have not been given one in the previous 12 months, the information should be provided within two months. In practice a manual estimate often takes around 40 days.",
     ],
     links: [
-      { label: "England & Wales TRS", href: "https://www.totalrewardstatements.nhs.uk/MyStatement" },
+      { label: "England & Wales statements", href: "https://www.nhsbsa.nhs.uk/employee-section" },
     ],
     requires: ["membership"],
     schemeChoice: false,
